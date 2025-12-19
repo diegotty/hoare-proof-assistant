@@ -1,87 +1,52 @@
-(* --- PARSE EXPRESSIONS (exp) --- *)
+In SML, i will need to do some operations on elements of a list.
+the thing is:
+at every step, i need to ask the user which element to use (via  CLI, they have to give me a  number in input to know what to do next).
 
-(* Parse atomic factors: Integers, Variables, or Parentheses *)
-fun parseFactor (TInt i :: rest) = (K (I i), rest) (* returns the int *)
-  | parseFactor (TWord "true" :: rest) = (K (B true), rest)
-  | parseFactor (TWord "false" :: rest) = (K (B false), rest)
-  | parseFactor (TWord x :: rest) = (X x, rest)
-(* if there's a parenthesis + something else *)
-  | parseFactor (TLParen :: rest) = 
-      let val (e, r) = parseExp rest 
-          val r2 = expect r TRParen
-      in (e, r2) end
-  | parseFactor _ = raise ParseError "Expected factor"
+how does that fit in with the functional style of SML? is that doable?
 
-(* Parse Additions: Factor + Factor *)
-and parsePlus tokens =
-    let val (left, rest) = parseFactor tokens
-    in 
-        case rest of
-             TPlus :: rest2 => 
-                let val (right, rest3) = parsePlus rest2 
-                in (Plus(left, right), rest3) end
-           | _ => (left, rest)
-    end
+(* Helper function to safely get the nth element (0-based) *)
+fun getElement ([], _) = NONE
+  | getElement (x::xs, 0) = SOME x
+  | getElement (x::xs, n) = getElement (xs, n - 1)
 
-(* Parse Less Than: PlusExp < PlusExp (Lowest precedence here) *)
-(* mi serve se ho tipo plus_exp < plus_exp in un assign (bool assign) *)
-and parseExp tokens = 
-    let val (left, rest) = parsePlus tokens
+(* The main interactive loop *)
+(* currentList: The list of items currently being worked on *)
+fun interact (currentList : string list) =
+    let
+        (* 1. Display current state or instructions *)
+        val _ = print "\n--- Current List ---\n"
+        val _ = app (fn x => print (x ^ " ")) currentList
+        val _ = print "\n\nEnter index to select (or 'q' to quit): "
+
+        (* 2. Read input from the CLI *)
+        val input = TextIO.inputLine TextIO.stdIn
     in
-        case rest of
-             TLess :: rest2 =>
-                let val (right, rest3) = parseExp rest2
-                in (Less(left, right), rest3) end
-           | _ => (left, rest)
+        case input of
+             NONE => print "Stream closed.\n" (* Handle End-of-File *)
+           | SOME line =>
+                let
+                    val cleanLine = String.substring (line, 0, size line - 1) (* Remove newline *)
+                in
+                    if cleanLine = "q" then
+                        print "Goodbye!\n" (* Base case: Stop recursion *)
+                    else
+                        (* 3. Process Input *)
+                        case Int.fromString cleanLine of
+                             NONE => 
+                                (print "Invalid number!\n"; 
+                                 interact currentList) (* Recurse with same list *)
+                           | SOME index =>
+                                (* 4. Logic on the element *)
+                                case getElement (currentList, index) of
+                                     NONE => 
+                                        (print "Index out of bounds!\n"; 
+                                         interact currentList)
+                                   | SOME item => 
+                                        (print ("\nYou selected: " ^ item ^ "\n");
+                                         (* 5. RECURSE: Pass the list (or a modified version) back *)
+                                         interact currentList) 
+                end
     end
 
-(* --- 2. PARSE COMMANDS (imp) --- *)
-
-(* Because of Sequence (I1 ; I2), we parse atoms first, then chain them *)
-
-fun parseAtomImp (TSemicolon :: rest) = parseAtomImp rest (* Skip extra semicolon (recursion 2+) *)
-  | parseAtomImp (TWord "skip" :: rest) = (Skip, rest)
-  
-  (* Assignment: x := e *)
-  (* rest è r-exp *)
-  | parseAtomImp (TWord v :: TAssign :: rest) = 
-      let val (e, r) = parseExp rest 
-      in (Assign(v, e), r) end
-      
-  (* If: if true then c1 else c2 *)
-  | parseAtomImp (TWord "if" :: rest) = 
-      let 
-         (* Strict adherence to your type: must be literal bool *)
-         val (b, r1) = case rest of 
-              (TWord "true" :: r) => (true, r)
-            | (TWord "false" :: r) => (false, r)
-            | _ => raise ParseError "If condition must be 'true' or 'false' based on datatype"
-         val r2 = expect r1 (TWord "then")
-         val (c1, r3) = parseImp r2
-         val r4 = expect r3 (TWord "else")
-         val (c2, r5) = parseImp r4
-      in (If(b, c1, c2), r5) end
-
-  (* While: while true do c *)
-  | parseAtomImp (TWord "while" :: rest) =
-      let
-         val (b, r1) = case rest of
-              (TWord "true" :: r) => (true, r)
-            | (TWord "false" :: r) => (false, r)
-            | _ => raise ParseError "While condition must be bool"
-         val r2 = expect r1 (TWord "do")
-         val (c, r3) = parseImp r2
-      in (While(b, c), r3) end
-      
-  | parseAtomImp _ = raise ParseError "Unknown command"
-
-(* Parse Sequence: atom ; atom ; atom ... *)
-and parseImp tokens =
-    let val (first, rest) = parseAtomImp tokens
-    in
-        case rest of
-             TSemicolon :: rest2 => 
-                let val (second, rest3) = parseImp rest2
-                in (Sec(first, second), rest3) end
-           | _ => (first, rest)
-    end
+(* Start the program *)
+val _ = interact ["Apple", "Banana", "Cherry", "Date"]
