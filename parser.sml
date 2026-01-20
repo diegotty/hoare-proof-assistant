@@ -6,11 +6,12 @@ type variable = string * domain (* implementazione delle variabili *)
 datatype condition =  Lti of (variable * int) | Ltv of (variable * variable)
                     | Gti of (variable * int) | Gtv of (variable * variable)
                     | Eqi of (variable * int) | Eqv of (variable * variable)
+                    | Neqi of (variable * int) | Neqv of (variable * variable)
                     | And of (condition * condition) | Or of (condition * condition)
-                    | Implies of (condition * condition)
+                    | Implies of (condition * condition) | Not of condition;
 
 datatype k = I of int | B of bool;
-datatype exp = K of k | X of string | Plus of (exp * exp) | Less of (exp * exp)
+datatype exp = K of k | X of string | Plus of (exp * exp) | Less of (exp * exp);
 datatype imp = Skip | Sec of (imp * imp) | If of (condition * imp * imp) |  While of (condition * imp) | Assign of (string * exp);
 
 type triple = (condition * imp * condition)
@@ -23,8 +24,8 @@ datatype token =
   | TLParen | TRParen       (* ( ) *)
   | TSemicolon              (* ; *)
   | TLess | TPlus           (* < + *)
-  | TGre | TEq              (* > = *)
-  | TAnd | TOr              (* & | *)
+  | TGre | TEq | TNeq       (* > = *)
+  | TAnd | TOr              (* & | ! *)
   | TAssign                 (* := *)
   | TInt of int             (* 42 *)
   | TWord of string         (* x, y, while, if... *)
@@ -55,6 +56,7 @@ fun tokenize (str: string) : token list =
           | scan (#")" :: cs) = TRParen :: scan cs
           | scan (#";" :: cs) = TSemicolon :: scan cs
           | scan (#"+" :: cs) = TPlus :: scan cs
+          | scan (#"<" :: #">" :: cs) = TNeq :: scan cs
           | scan (#"<" :: cs) = TLess :: scan cs
           | scan (#">" :: cs) = TGre :: scan cs
           | scan (#"=" :: cs) = TEq :: scan cs
@@ -91,9 +93,10 @@ fun parseCondition (TWord v :: TLess :: TInt i :: rest) = (Lti(mkVar v, i), rest
   | parseCondition (TWord v1 :: TLess :: TWord v2 :: rest) = (Ltv(mkVar v1, mkVar v2), rest)
   | parseCondition (TWord v1 :: TEq :: TInt i :: rest) = (Eqi(mkVar v1, i), rest)
   | parseCondition (TWord v1 :: TEq :: TWord v2 :: rest) = (Eqv(mkVar v1, mkVar v2), rest)
+  | parseCondition (TWord v1 :: TNeq :: TInt i :: rest) = (Neqi(mkVar v1, i), rest)
+  | parseCondition (TWord v1 :: TNeq :: TWord v2 :: rest) = (Neqv(mkVar v1, mkVar v2), rest)
   | parseCondition (TWord v1 :: TGre :: TInt i :: rest) = (Gti(mkVar v1, i), rest)
   | parseCondition (TWord v1 :: TGre :: TWord v2 :: rest) = (Gtv(mkVar v1, mkVar v2), rest)
-
   | parseCondition _ = raise ParseError "Invalid Condition"
 
 (* AND case: an AND between the current condition + the result of the recursion (other conditions) *)
@@ -238,7 +241,6 @@ fun parseTriple tokens =
     in
         (pre, cmd, post)
     end
-
 
 
 fun readTripleStr str = parseTriple (tokenize str)
