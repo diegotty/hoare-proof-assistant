@@ -1,8 +1,8 @@
-In SML, i will need to do some operations on elements of a list.
+(* In SML, i will need to do some operations on elements of a list.
 the thing is:
 at every step, i need to ask the user which element to use (via  CLI, they have to give me a  number in input to know what to do next).
 
-how does that fit in with the functional style of SML? is that doable?
+how does that fit in with the functional style of SML? is that doable? *)
 
 (* Helper function to safely get the nth element (0-based) *)
 fun getElement ([], _) = NONE

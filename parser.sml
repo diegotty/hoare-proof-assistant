@@ -11,7 +11,7 @@ datatype condition =  Lti of (variable * int) | Ltv of (variable * variable)
                     | Implies of (condition * condition) | Not of condition;
 
 datatype k = I of int | B of bool;
-datatype exp = K of k | X of string | Plus of (exp * exp) | Less of (exp * exp);
+datatype exp = K of k | X of string | Plus of (exp * exp) | Minus of (exp * exp) | Less of (exp * exp);
 datatype imp = Skip | Sec of (imp * imp) | If of (condition * imp * imp) |  While of (condition * imp) | Assign of (string * exp);
 
 type triple = (condition * imp * condition)
@@ -23,8 +23,8 @@ datatype token =
     TLBrace | TRBrace       (* { } *)
   | TLParen | TRParen       (* ( ) *)
   | TSemicolon              (* ; *)
-  | TLess | TPlus           (* < + *)
-  | TGre | TEq | TNeq       (* > = *)
+  | TLess | TPlus | TMinus  (* < + - *)
+  | TGre | TEq | TNeq       (* > = <> *)
   | TAnd | TOr              (* & | ! *)
   | TAssign                 (* := *)
   | TInt of int             (* 42 *)
@@ -56,6 +56,7 @@ fun tokenize (str: string) : token list =
           | scan (#")" :: cs) = TRParen :: scan cs
           | scan (#";" :: cs) = TSemicolon :: scan cs
           | scan (#"+" :: cs) = TPlus :: scan cs
+          | scan (#"-" :: cs) = TMinus :: scan cs
           | scan (#"<" :: #">" :: cs) = TNeq :: scan cs
           | scan (#"<" :: cs) = TLess :: scan cs
           | scan (#">" :: cs) = TGre :: scan cs
@@ -135,6 +136,12 @@ fun parseExp (TInt x :: TPlus :: rest) =
     in 
       (Plus(K(I(x)), expr), rest)
     end
+  | parseExp (TInt x :: TMinus :: rest) =
+    let
+      val (expr, rest) = parseExp rest
+    in 
+      (Minus(K(I(x)), expr), rest)
+    end
   | parseExp (TInt x :: TLess :: rest) = 
     let 
       val (expr, rest) = parseExp rest
@@ -146,6 +153,12 @@ fun parseExp (TInt x :: TPlus :: rest) =
       val (expr, rest) = parseExp rest
     in 
       (Plus(X(x), expr), rest)
+    end
+  | parseExp (TWord x :: TMinus :: rest) =
+    let 
+      val (expr, rest) = parseExp rest
+    in 
+      (Minus(X(x), expr), rest)
     end
   (* base cases: *)
   | parseExp (TInt x :: rest) = (K(I(x)), rest)
