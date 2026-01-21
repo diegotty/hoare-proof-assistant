@@ -1,14 +1,13 @@
-use "parser.sml";
+use "datatypes.sml";
 use "utils.sml";
+use "parser.sml";
 
-val root = ref OpenNode;
+val dummy_cond = Lti (("x", (NONE, NONE)), 10);
+val dummy_root_val = (dummy_cond, Skip, dummy_cond);
+val root = ref (OpenNode(TripleNode dummy_root_val));
 
-datatype node = OpenNode of triple
-   | ProvenNode of node ref
-   | Visited of (node ref) list | Implication of condition;
-
-fun length ([] : int list) : int = 0
-  | length (x::xs : int list) : int = 1 + length xs;
+fun length ([]) = 0
+  | length (x::xs) = 1 + length xs;
 
 (*
 val it =
@@ -19,10 +18,10 @@ val it =
 
 fun analyzeIf (nod) = 
    let
-      val OpenNode (prec, prog, post) = !nod
+      val OpenNode(TripleNode (prec, prog, post)) = !nod
       val If (c, t, e) = prog;
-      val then_triple = ref (OpenNode(And(prec, c), t, post));
-      val else_triple = ref (OpenNode(And(prec, Not(c)), e, post));
+      val then_triple = ref (OpenNode(TripleNode(And(prec, c), t, post)));
+      val else_triple = ref (OpenNode(TripleNode(And(prec, Not(c)), e, post)));
       val children = [nod, then_triple, else_triple];
    in
       (* val _ = node := Visited(children) *)
@@ -31,22 +30,49 @@ fun analyzeIf (nod) =
 
 (* fun analyzeWhile (nod) = 
    let
-      val OpenNode (prec, prog, post) = !nod
+      val TripleNode (prec, prog, post) = !nod
       val While (c, _) = prog;
-      val strength = ref Implication(Implies(prec, (* invariante *)));
-      val weak = ref Implication(Implies(And((* invariante *), Not(c)), post));
-      val instr = ref (OpenNode ((* invariante *), prog, And((*invariante*), Not(c))));
+      val strength = ref OpenNode(Implication(Implies(prec, (* invariante *))));
+      val weak = ref OpenNode(Implication(Implies(And((* invariante *), Not(c)), post)));
+      val instr = ref OpenNode((TripleNode ((* invariante *), prog, And((*invariante*), Not(c)))));
       
       val children = [nod, strength, weak, instr]
    in
       nod := Visited(children)
    end *)
+   
+(* i + forti *)
+fun visit (nod) = 
+   case !nod of
+      OpenNode i => [nod]
+    | Visited i =>
+        let
+            val (me::rest) = i
+        in 
+            List.concat (map (fn x => visit x) rest)
+        end
+    | _ => []
+
+fun updateTree (nod) = 
+   case !nod of
+      ProvenNode i => true
+    | Visited i =>
+        let
+            val (me::rest) = i
+            val isProved = List.all (fn x => updateTree x) rest;
+        in
+            if isProved then 
+                (me := ProvenNode me;
+                nod := ProvenNode(nod))
+            else ();
+            isProved
+    end
+    | _ => false
+
 
 fun infer nod = 
-   case !nod of 
-      Implication imp =>
-         raise ParseError "invalid program" 
-      | OpenNode opp =>
+   case nod of
+      ref (OpenNode(TripleNode opp)) =>
          let 
             val (pre, prog, post) = opp;
             val _ = case prog of
@@ -70,27 +96,24 @@ fun infer nod =
 
       
 fun readTripleStr str = 
-     let 
+      let 
          val trpl = parseTriple (tokenize str);
-         root := ref (OpenNode trpl);
-     in
+      in
          (* chiamiamo analisi triple *) 
-         infer root
-     end
+         root := OpenNode(TripleNode trpl);
+         infer root;
+         app (fn x => print(nodeToString x)) (visit root)
+      end 
+
+
 
 fun getElement ([], _) = NONE
   | getElement (x::xs, 0) = SOME x
   | getElement (x::xs, n) = getElement (xs, n - 1)
 
-(*TODO: finire visita*)
-fun visit (nod) = 
-   case nod of
-      OpenNode i => [i]
-    | ProvenNode i => []
-    | Implication i => [i]
-    | Visited i => List.app (fn x => [visit x]) i
 
-fun handleNode n =
+
+(* fun handleNode n =
    let
       val nod = infer n;
       
@@ -142,7 +165,7 @@ fun interact (currentList : string list) =
                                        (* ricorsione *)
                                        interact currentList) 
                end
-   end
+   end *)
 
 
 (* 

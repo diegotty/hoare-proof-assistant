@@ -30,11 +30,11 @@ fun expToString expr =
 
 fun progToString prog =
     case prog of 
-        Skip => "skip "
+          Skip => "skip "
         | Sec (p, q) => progToString(q) ^ ";" ^ progToString(q)
         | If (c, p, q) => "if " ^ conditionToString(c) ^ " then " ^ progToString(p) ^ " else " ^ progToString(q)
         | While (cond, p) => conditionToString(cond) ^ " do " ^ progToString(p)
-        | Assign (str, expr) => str ^ " := " ^ expToString(expr);
+        | Assign (str, expr) => str ^ " := " ^ expToString(expr) ^ " ";
 
 fun tripleToString (prec, prog, post) =
     let
@@ -42,5 +42,13 @@ fun tripleToString (prec, prog, post) =
         val newprog = progToString prog;
         val newpost = "{" ^ conditionToString post ^ "}\n";
     in
-        (newprec, newprog, newpost)
+        newprec ^ newprog ^ newpost
     end
+
+fun nodeToString n = 
+    case !n of
+          Implication i => conditionToString i
+        | TripleNode i => tripleToString i
+        | OpenNode(TripleNode(i)) => tripleToString i
+        | OpenNode(Implication(i)) => conditionToString i
+        | _ => "";
