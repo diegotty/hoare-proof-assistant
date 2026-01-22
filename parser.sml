@@ -72,6 +72,17 @@ fun expect (tok :: rest) expected =
 (* constructs LessThans from given condition
   if condition is word + < + int or word + < + word, it builds the datatype via the correct constructor
 *)
+
+fun parseInvariant [TWord v, TLess, TInt i] = Lti(mkVar v, i)
+  | parseInvariant [TWord v1, TLess, TWord v2] = Ltv(mkVar v1, mkVar v2)
+  | parseInvariant [TWord v1, TEq, TInt i] = Eqi(mkVar v1, i)
+  | parseInvariant [TWord v1, TEq, TWord v2] = Eqv(mkVar v1, mkVar v2)
+  | parseInvariant [TWord v1, TNeq, TInt i] = Eqi(mkVar v1, i)
+  | parseInvariant [TWord v1, TNeq, TWord v2] = Neqv(mkVar v1, mkVar v2)
+  | parseInvariant [TWord v1, TGre, TInt i] = Gti(mkVar v1, i)
+  | parseInvariant [TWord v1, TGre, TWord v2] = Gtv(mkVar v1, mkVar v2)
+  | parseInvariant _ = raise ParseError "Invalid Condition"
+
 fun parseCondition (TWord v :: TLess :: TInt i :: rest) = (Lti(mkVar v, i), rest)
   | parseCondition (TWord v1 :: TLess :: TWord v2 :: rest) = (Ltv(mkVar v1, mkVar v2), rest)
   | parseCondition (TWord v1 :: TEq :: TInt i :: rest) = (Eqi(mkVar v1, i), rest)
@@ -81,6 +92,25 @@ fun parseCondition (TWord v :: TLess :: TInt i :: rest) = (Lti(mkVar v, i), rest
   | parseCondition (TWord v1 :: TGre :: TInt i :: rest) = (Gti(mkVar v1, i), rest)
   | parseCondition (TWord v1 :: TGre :: TWord v2 :: rest) = (Gtv(mkVar v1, mkVar v2), rest)
   | parseCondition _ = raise ParseError "Invalid Condition"
+
+
+fun analyzeInvariant(a :: b :: c :: TAnd :: rest) = 
+      let
+          val (rightConditions, finalTokens) = analyzeInvariant rest
+          val (leftCond, _) = parseCondition [a,b,c]
+      in
+          (And(leftCond, rightConditions), finalTokens)
+      end
+      (* OR case: an OR between the current condition + the result finalTokensof the recursion *)
+  | analyzeInvariant (a :: b :: c :: TOr :: rest) = 
+      let 
+          val (rightConditions, finalTokens) = analyzeInvariant rest
+          val (leftCond, _) = parseCondition [a,b,c]
+      in
+          (Or(leftCond, rightConditions), finalTokens)
+      end
+  | analyzeInvariant [a, b, c] = (parseInvariant [a, b, c], [])
+  | analyzeInvariant _ = (raise Fail "Syntax Error: malformed condition or missing ")
 
 (* AND case: an AND between the current condition + the result of the recursion (other conditions) *)
 fun analyzeCondition (a :: b :: c :: TAnd :: rest) = 
@@ -109,7 +139,6 @@ fun analyzeCondition (a :: b :: c :: TAnd :: rest) =
         (finalCondition, right)
       end
   | analyzeCondition _ = raise Fail "Syntax Error: malformed condition or missing }"
-
 
 (* returns a correct "exp" exp *)
 fun parseExp (TInt x :: TPlus :: rest) =
@@ -187,7 +216,6 @@ and parseImp tokens =
     let 
 
     val (first, rest) = parseInstruction tokens
-
 
     in
         case rest of

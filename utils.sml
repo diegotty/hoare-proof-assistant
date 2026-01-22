@@ -16,7 +16,7 @@ fun conditionToString cond =
         | Neqv ((str1, _), (str2, _)) => str1 ^ " <> " ^ str2
         | And (c1, c2) => conditionToString(c1) ^ " & " ^ conditionToString(c2)
         | Or (c1, c2) => conditionToString(c1) ^ " <> " ^ conditionToString(c2)
-        | Implies (c1, c2) => conditionToString(c1) ^ " => " ^ conditionToString(c2)
+        | Implies (c1, c2) => "(" ^ conditionToString(c1) ^ ") => (" ^ conditionToString(c2) ^ ")"
         | Not c => "!" ^ conditionToString(c);
 
 fun expToString expr = 
@@ -33,14 +33,14 @@ fun progToString prog =
           Skip => "skip "
         | Sec (p, q) => progToString(q) ^ ";" ^ progToString(q)
         | If (c, p, q) => "if " ^ conditionToString(c) ^ " then " ^ progToString(p) ^ " else " ^ progToString(q)
-        | While (cond, p) => conditionToString(cond) ^ " do " ^ progToString(p)
+        | While (cond, p) => "while " ^ conditionToString(cond) ^ " do " ^ progToString(p)
         | Assign (str, expr) => str ^ " := " ^ expToString(expr) ^ " ";
 
 fun tripleToString (prec, prog, post) =
     let
         val newprec = "{" ^ conditionToString prec ^ "} ";
         val newprog = progToString prog;
-        val newpost = "{" ^ conditionToString post ^ "}\n";
+        val newpost = "{" ^ conditionToString post ^ "}";
     in
         newprec ^ newprog ^ newpost
     end
