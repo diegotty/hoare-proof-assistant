@@ -1,5 +1,3 @@
-fun mkVar s : variable = (s, (NONE, NONE))
-
 (* used to transform into parsable characters *)
 datatype token = 
     TLBrace | TRBrace       (* { } *)
@@ -73,24 +71,24 @@ fun expect (tok :: rest) expected =
   if condition is word + < + int or word + < + word, it builds the datatype via the correct constructor
 *)
 
-fun parseInvariant [TWord v, TLess, TInt i] = Lti(mkVar v, i)
-  | parseInvariant [TWord v1, TLess, TWord v2] = Ltv(mkVar v1, mkVar v2)
-  | parseInvariant [TWord v1, TEq, TInt i] = Eqi(mkVar v1, i)
-  | parseInvariant [TWord v1, TEq, TWord v2] = Eqv(mkVar v1, mkVar v2)
-  | parseInvariant [TWord v1, TNeq, TInt i] = Eqi(mkVar v1, i)
-  | parseInvariant [TWord v1, TNeq, TWord v2] = Neqv(mkVar v1, mkVar v2)
-  | parseInvariant [TWord v1, TGre, TInt i] = Gti(mkVar v1, i)
-  | parseInvariant [TWord v1, TGre, TWord v2] = Gtv(mkVar v1, mkVar v2)
+fun parseInvariant [TWord v, TLess, TInt i] = Lt(X v, K(I i))
+  | parseInvariant [TWord v1, TLess, TWord v2] = Lt(X v1, X v2)
+  | parseInvariant [TWord v1, TEq, TInt i] = Eq(X v1, K(I i))
+  | parseInvariant [TWord v1, TEq, TWord v2] = Eq(X v1, X v2)
+  | parseInvariant [TWord v1, TNeq, TInt i] = Eq(X v1, K (I i))
+  | parseInvariant [TWord v1, TNeq, TWord v2] = Neq(X v1, X v2)
+  | parseInvariant [TWord v1, TGre, TInt i] = Gt(X v1, K(I i))
+  | parseInvariant [TWord v1, TGre, TWord v2] = Gt(X v1, X v2)
   | parseInvariant _ = raise ParseError "Invalid Condition"
 
-fun parseCondition (TWord v :: TLess :: TInt i :: rest) = (Lti(mkVar v, i), rest)
-  | parseCondition (TWord v1 :: TLess :: TWord v2 :: rest) = (Ltv(mkVar v1, mkVar v2), rest)
-  | parseCondition (TWord v1 :: TEq :: TInt i :: rest) = (Eqi(mkVar v1, i), rest)
-  | parseCondition (TWord v1 :: TEq :: TWord v2 :: rest) = (Eqv(mkVar v1, mkVar v2), rest)
-  | parseCondition (TWord v1 :: TNeq :: TInt i :: rest) = (Neqi(mkVar v1, i), rest)
-  | parseCondition (TWord v1 :: TNeq :: TWord v2 :: rest) = (Neqv(mkVar v1, mkVar v2), rest)
-  | parseCondition (TWord v1 :: TGre :: TInt i :: rest) = (Gti(mkVar v1, i), rest)
-  | parseCondition (TWord v1 :: TGre :: TWord v2 :: rest) = (Gtv(mkVar v1, mkVar v2), rest)
+fun parseCondition (TWord v :: TLess :: TInt i :: rest) = (Lt(X v, K(I i)), rest)
+  | parseCondition (TWord v1 :: TLess :: TWord v2 :: rest) = (Lt(X v1, X v2), rest)
+  | parseCondition (TWord v1 :: TEq :: TInt i :: rest) = (Eq(X v1, K(I i)), rest)
+  | parseCondition (TWord v1 :: TEq :: TWord v2 :: rest) = (Eq(X v1, X v2), rest)
+  | parseCondition (TWord v1 :: TNeq :: TInt i :: rest) = (Neq(X v1, K (I i)), rest)
+  | parseCondition (TWord v1 :: TNeq :: TWord v2 :: rest) = (Neq(X v1, X v2), rest)
+  | parseCondition (TWord v1 :: TGre :: TInt i :: rest) = (Gt(X v1, K(I i)), rest)
+  | parseCondition (TWord v1 :: TGre :: TWord v2 :: rest) = (Gt(X v1, X v2), rest)
   | parseCondition _ = raise ParseError "Invalid Condition"
 
 

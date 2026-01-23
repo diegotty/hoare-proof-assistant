@@ -4,20 +4,6 @@ val it =
    If (Lti (("x",(NONE,NONE)),3),Assign ("x",Plus (X "x",K (I 1))),Skip),
    Lti (("x",(NONE,NONE)),10)) : condition * imp * condition
 *)
-fun conditionToString cond =
-    case cond of 
-          Lti ((str, _), i) => str ^ " < " ^ Int.toString i
-        | Ltv ((str1, _), (str2, _)) => str1 ^ " < " ^ str2
-        | Gti ((str, _), i) => str ^ " > " ^ Int.toString i
-        | Gtv ((str1, _), (str2, _)) => str1 ^ " > " ^ str2
-        | Eqi ((str,  _), i) => str ^ " = " ^ Int.toString i
-        | Eqv ((str1, _), (str2, _)) => str1 ^ " = " ^ str2
-        | Neqi ((str, _), i) => str ^ " <> " ^ Int.toString i
-        | Neqv ((str1, _), (str2, _)) => str1 ^ " <> " ^ str2
-        | And (c1, c2) => conditionToString(c1) ^ " & " ^ conditionToString(c2)
-        | Or (c1, c2) => conditionToString(c1) ^ " <> " ^ conditionToString(c2)
-        | Implies (c1, c2) => "(" ^ conditionToString(c1) ^ ") => (" ^ conditionToString(c2) ^ ")"
-        | Not c => "!" ^ conditionToString(c);
 
 fun expToString expr = 
     case expr of
@@ -27,6 +13,17 @@ fun expToString expr =
         | K(I i) => Int.toString i
         | K(B b) => Bool.toString b
         | X x => x;
+
+fun conditionToString cond =
+    case cond of 
+          Lt (exp1, exp2) => expToString exp1 ^ " < " ^ expToString exp2
+        | Gt (exp1, exp2) => expToString exp1 ^ " > " ^ expToString exp2
+        | Eq (exp1, exp2) => expToString exp1 ^ " = " ^ expToString exp2
+        | Neq (exp1, exp2) => expToString exp1 ^ " <> " ^ expToString exp2
+        | And (c1, c2) => conditionToString(c1) ^ " & " ^ conditionToString(c2)
+        | Or (c1, c2) => conditionToString(c1) ^ " <> " ^ conditionToString(c2)
+        | Implies (c1, c2) => "(" ^ conditionToString(c1) ^ ") => (" ^ conditionToString(c2) ^ ")"
+        | Not c => "!" ^ conditionToString(c);
 
 fun progToString prog =
     case prog of 
