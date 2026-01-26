@@ -17,4 +17,4 @@ type triple = (condition * imp * condition)
 datatype node = OpenNode of node
    | ProvenNode of node ref
    | Visited of (node ref) list | Implication of condition
-   | TripleNode of triple;
+   | TripleNode of triple | WrongNode of node ref;
