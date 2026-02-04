@@ -1,3 +1,23 @@
+fun transExp (e: exp) : f_term =
+    case e of
+       K (I i) => F_Const i
+     | X s => F_Var s            
+     | Plus(e1, e2) => F_Plus(transExp e1, transExp e2)
+     | Minus(e1, e2) => F_Minus(transExp e1, transExp e2)
+     | _ => raise ParseError "issues with the implication"
+
+fun transImp (c: condition) : f_formula =
+    case c of
+       Lt(e1, e2) => F_Lt(transExp e1, transExp e2)
+     | Gt(e1, e2) => F_Gt(transExp e1, transExp e2)
+     | Eq(e1, e2) => F_Eq(transExp e1, transExp e2)
+     | Neq(e1, e2) => 
+            F_Or(F_Lt(transExp e1, transExp e2), F_Gt(transExp e1, transExp e2))
+     | And(c1, c2) => F_And(transImp c1, transImp c2)
+     | Or(c1, c2) => F_Or(transImp c1, transImp c2)
+     | Implies(c1, c2) => F_Implies(transImp c1, transImp c2)
+     | Not(c1) => F_Not(transImp c1)
+
 fun getInvariant () =
    let
         val _ = print("to properly analyse this 'while', i need an invariant!\ntype it directly (ex. 'x > 2')\n-" ^ purple ^ "invariant: " ^ resetColor);
@@ -45,6 +65,25 @@ fun analyzeWhile nod =
         nod := Visited(children)
     end
 
+fun analyzeImplication nod =
+    let
+        val _ =  print("do you want to determine the validity of this implication?")
+        val input = TextIO.inputLine TextIO.stdIn 
+
+        val OpenNode(cond) = !nod
+        val Implication(imp) = cond
+
+        val isTrue = verify (transImp imp)
+    in
+        (
+        getConfirmationFromUser;
+        if isTrue then
+            nod := ProvenNode(ref cond)
+        else 
+            nod := WrongNode(ref cond)
+        )
+    end
+
 fun swapExp (cond, targetVar, replacementVar) =
     case cond of 
             Plus (exp1, exp2) => 
@@ -78,14 +117,27 @@ fun substitute(And(cond1, cond2), variable, value) =
 
 fun analyzeAssign nod = 
     let
-        val OpenNode (TripleNode (_, prog, post)) = !nod
+        val OpenNode (TripleNode (prec, prog, post)) = !nod
         val Assign(variable, value) = prog
 
         val newPrec = substitute(post, variable, value)
+        val me = ref(TripleNode(prec, prog, post))
+        val newMe = ref(TripleNode(newPrec, prog, post))
+        
+        val impl = ref(OpenNode(Implication(Implies(prec, newPrec))))
+
+        val children = [me, impl, newMe]
+
     in
+        analyzeImplication impl;
+
+        case !impl of 
+              ProvenNode(n) => newMe := ProvenNode(ref(TripleNode(newPrec, prog, post)))
+            | WrongNode(n) => ();
+
         OS.Process.system "clear";
-        print ("we have just proven that: " ^ green ^ nodeToString (ref (OpenNode (TripleNode(newPrec, prog, post)))) ^ resetColor ^"\n\n");
-        nod := ProvenNode (ref(TripleNode(newPrec, prog, post)))
+
+        nod := Visited(children)
     end
 
 fun getPreconditionConsideringNodeType node =
@@ -102,6 +154,12 @@ fun getPreconditionConsideringNodeType node =
         in 
             pre
         end
+    | OpenNode i =>
+        let
+            val TripleNode(pr1, _, _) = i
+        in
+            pr1
+        end
 
 fun buildNodes (prog, post) =
    case prog of
@@ -114,8 +172,8 @@ fun buildNodes (prog, post) =
         end
       | Assign (variable, value) => 
         let
-            val new = ref (ProvenNode(ref(TripleNode(substitute(post, variable, value), prog, post))))
-            val _ = print("\nproved: " ^ green ^ nodeToString new ^ resetColor ^ "\n")
+            val new = ref (OpenNode(TripleNode(substitute(post, variable, value), prog, post)))
+            (* val _ = print("\nproved: " ^ green ^ nodeToString new ^ resetColor ^ "\n") *)
         in
             new
         end
@@ -133,7 +191,7 @@ fun buildNodes (prog, post) =
             val me = ref(TripleNode(pre, prog, post))
             
             val new = ref(Visited([me, node1, node2]))
-            val _ = print("\nproved: " ^ green ^ nodeToString me ^ resetColor ^ "\n")
+            (* val _ = print("\nproved: " ^ green ^ nodeToString me ^ resetColor ^ "\n") *)
         in
             new
         end
@@ -148,8 +206,10 @@ fun buildNodes (prog, post) =
             val impl2 = ref(OpenNode(Implication(Implies(And(i, c), pre))))
             
             val me = ref(OpenNode(TripleNode(i, prog, post)))
+            val tri = ref (OpenNode(TripleNode (And(i, c), d, i)));
 
-            val new = ref(Visited([me, impl1, impl2]))
+
+            val new = ref(Visited([me, impl1, impl2, tri]))
             val _ = print("\nproved: " ^ green ^ nodeToString me ^ resetColor ^ "\n")
         in
             new
@@ -192,26 +252,3 @@ fun analyzeSex nod =
         nod := Visited(children)
     end
 
-fun analyzeImplication nod =
-    let
-        val _ =  print("\n determine the truth of the implication (T/F): ")
-        val input = TextIO.inputLine TextIO.stdIn
-        
-    in
-        case input of
-            NONE => print "stream closed ??\n"
-            | SOME text => 
-                case String.substring (text, 0, size text - 1) of
-                    "T" => 
-                    let
-                        val OpenNode(cond) = !nod
-                    in
-                        nod := ProvenNode(ref cond)
-                    end
-                    | "F" =>
-                    let
-                        val OpenNode(cond) = !nod
-                    in
-                        nod := WrongNode(ref cond)
-                    end
-    end

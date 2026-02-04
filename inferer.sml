@@ -1,4 +1,5 @@
 use "datatypes.sml";
+use "fme.sml";
 use "utils.sml";
 use "parser.sml";
 use "analyze.sml";
@@ -17,9 +18,12 @@ fun visit (nod, l) =
         in 
             List.concat (map (fn x => visit (x, l+1)) rest)
         end
-    | WrongNode i => (printFancyTree root; 
-      print "the proof is over! the initial triple was not valid DD:\n\n";
-      OS.Process.exit OS.Process.success)
+    | WrongNode i => (
+         printFancyTree root; 
+         print "the proof is over! the initial triple was not valid DD:\n\n";
+         (* OS.Process.exit OS.Process.success) *)
+         raise Exit
+      )
     | _ => []
 
 fun updateTree (nod) = 
@@ -127,7 +131,7 @@ fun interact (currentLeaves) =
    end
 
 fun readTripleStr str = 
-      let 
+      (let 
          val _ = OS.Process.system "clear";
          val trpl = parseTriple (tokenize str);
          
@@ -139,7 +143,7 @@ fun readTripleStr str =
          val leaves = visit (root, 0);
       in
          interact leaves
-      end 
+      end) handle Exit => ();
 
 (* 
 stack trace smlnj
@@ -149,7 +153,7 @@ SMLofNJ.Internals.TDP.mode := true;
 OS.Process.system "clear";
 use "inferer.sml";
 
-readTripleStr "{ x < 5 } skip; while (x < 2) (x := 5; skip) { x < 10 }";
+readTripleStr "{ x < 5 } x:=2; while (x < 2) (x:=4) { x < 10 }";
  
  *)
 

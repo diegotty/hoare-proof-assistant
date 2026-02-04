@@ -96,3 +96,6 @@ fun printLeaves (leaves, 0) = (print("\nunproven nodes are: \n\n"); printLeaves(
   | printLeaves ((leaf, level)::rest, y) = 
     (print (CharVector.tabulate ((level-1) * 4, fn _ => #" ") ^ "(" ^ Int.toString y ^ ") " ^ (nodeToString leaf) ^ "\n\n"); 
      printLeaves (rest, y+1)); 
+
+exception Exit;
+fun quit () = raise Exit;
