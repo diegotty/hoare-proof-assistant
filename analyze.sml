@@ -17,6 +17,8 @@ fun transImp (c: condition) : f_formula =
      | Or(c1, c2) => F_Or(transImp c1, transImp c2)
      | Implies(c1, c2) => F_Implies(transImp c1, transImp c2)
      | Not(c1) => F_Not(transImp c1)
+     | True => F_True
+     | False => F_False
 
 fun getInvariant () =
    let
@@ -52,8 +54,12 @@ fun analyzeIf nod =
 fun analyzeWhile nod = 
     let
         val OpenNode (TripleNode (prec, prog, post)) = !nod
-        val While (c, l) = prog;
-        val invariant = getInvariant ();
+        
+        val (c, l, invariant) =  
+            case prog of
+                  While (c, b) => (c, b, getInvariant())
+                | WhileWithInv (c, b, i) => (c, b, i)
+
         val _ = print("invariant is: " ^ (conditionToString invariant) ^ "\n");
         val strength = ref (OpenNode(Implication(Implies(prec, invariant))));
         val weak = ref (OpenNode(Implication(Implies(And(invariant, Not(c)), post))));
@@ -67,11 +73,12 @@ fun analyzeWhile nod =
 
 fun analyzeImplication nod =
     let
-        val _ =  print("do you want to determine the validity of this implication?")
-        val input = TextIO.inputLine TextIO.stdIn 
-
         val OpenNode(cond) = !nod
         val Implication(imp) = cond
+
+        val _ = print("\nwe need to solve this implication: " ^ purple ^ conditionToString imp ^ resetColor)
+        val _ =  print("\n\nenter to determine its validity:")
+        val input = TextIO.inputLine TextIO.stdIn 
 
         val isTrue = verify (transImp imp)
     in
@@ -170,13 +177,7 @@ fun buildNodes (prog, post) =
         in 
             new
         end
-      | Assign (variable, value) => 
-        let
-            val new = ref (OpenNode(TripleNode(substitute(post, variable, value), prog, post)))
-            (* val _ = print("\nproved: " ^ green ^ nodeToString new ^ resetColor ^ "\n") *)
-        in
-            new
-        end
+      | Assign (variable, value) => ref (OpenNode(TripleNode(substitute(post, variable, value), prog, post)))
       | If (c, t, e) =>
         let 
             val node1 = buildNodes (t,c)
@@ -189,44 +190,29 @@ fun buildNodes (prog, post) =
             val pre = And(Implies(c, pre1), Implies(Not(c), pre2))
 
             val me = ref(TripleNode(pre, prog, post))
-            
-            val new = ref(Visited([me, node1, node2]))
-            (* val _ = print("\nproved: " ^ green ^ nodeToString me ^ resetColor ^ "\n") *)
         in
-            new
+            me
         end
       | While (c, d) => 
         let
             val i = getInvariant ()
-
-            val impl1 = ref(OpenNode((Implication(Implies(And(i, Not(c)), post)))))
-            
-            val node = buildNodes(d, i)
-            val pre = getPreconditionConsideringNodeType node
-            val impl2 = ref(OpenNode(Implication(Implies(And(i, c), pre))))
-            
-            val me = ref(OpenNode(TripleNode(i, prog, post)))
-            val tri = ref (OpenNode(TripleNode (And(i, c), d, i)));
-
-
-            val new = ref(Visited([me, impl1, impl2, tri]))
-            val _ = print("\nproved: " ^ green ^ nodeToString me ^ resetColor ^ "\n")
         in
-            new
+            ref(OpenNode(TripleNode(i, WhileWithInv(c, d, i), post)))
         end
+    | WhileWithInv (c, d, inv) => ref(OpenNode(TripleNode(inv, WhileWithInv(c, d, inv), post)))
     | Sec (s1, s2) =>
         let
             val node1 = buildNodes(s2, post)
             val pre1 = getPreconditionConsideringNodeType node1
+            val OpenNode(TripleNode(_, sec1, _)) = !node1
             
             val node2 = buildNodes(s1, pre1)
             val pre2 = getPreconditionConsideringNodeType node2
+            val OpenNode(TripleNode(_, sec2, _)) = !node2
 
-            val me = ref(OpenNode(TripleNode(pre2, prog, post)))
-            val _ = print("\nproved: " ^ green ^ nodeToString me ^ resetColor ^ "\n")
-            val new = ref(Visited([me, node1, node2]))
+            val me = ref(OpenNode(TripleNode(pre2, Sec(sec1, sec2), post)))
         in
-            new
+            me
         end
 
 fun analyzeSex nod =
@@ -242,7 +228,7 @@ fun analyzeSex nod =
 
         val wp = getPreconditionConsideringNodeType sec2 
 
-        val _ = print("\nfound this precondition: " ^ conditionToString wp ^ "\n")
+        val _ = print("\nfound this precondition: " ^ green ^ conditionToString wp ^ resetColor ^ "\n")
 
         val sec1 = ref(OpenNode(TripleNode(prec, s1, wp)))
 

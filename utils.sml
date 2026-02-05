@@ -44,16 +44,19 @@ fun conditionToString cond =
         | Eq (exp1, exp2) => expToString exp1 ^ " = " ^ expToString exp2
         | Neq (exp1, exp2) => expToString exp1 ^ " <> " ^ expToString exp2
         | And (c1, c2) => conditionToString(c1) ^ " & " ^ conditionToString(c2)
-        | Or (c1, c2) => conditionToString(c1) ^ " <> " ^ conditionToString(c2)
+        | Or (c1, c2) => conditionToString(c1) ^ " | " ^ conditionToString(c2)
         | Implies (c1, c2) => "(" ^ conditionToString(c1) ^ ") => (" ^ conditionToString(c2) ^ ")"
-        | Not c => "!(" ^ conditionToString(c) ^ ")";
-
+        | Not c => "!(" ^ conditionToString(c) ^ ")"
+        | True => "true"
+        | False => "false";
+        
 fun progToString prog =
     case prog of 
           Skip => "skip"
         | Sec (p, q) => progToString(p) ^ "; " ^ progToString(q)
         | If (c, p, q) => "if " ^ conditionToString(c) ^ " then (" ^ progToString(p) ^ ") else (" ^ progToString(q) ^ ")"
         | While (cond, p) => "while (" ^ conditionToString(cond) ^ ") do (" ^ progToString(p) ^ ")"
+        | WhileWithInv (cond, p, i) => "while (" ^ conditionToString(cond) ^ ") do (" ^ progToString(p) ^ ")"
         | Assign (str, expr) => str ^ " := " ^ expToString(expr) ^ "";
 
 fun tripleToString (prec, prog, post) =
@@ -67,26 +70,14 @@ fun tripleToString (prec, prog, post) =
 
 fun nodeToString n = 
 let 
-    (* val _ = print(PolyML.makestring n ^ "\n") *)
-    val ret = case !n of
-          Implication i => conditionToString i
-        | TripleNode i => tripleToString i
-        | OpenNode i => nodeToString (ref i)
-        | WrongNode i => nodeToString i
-        | ProvenNode i => nodeToString i
-        | Visited(me::rest) => nodeToString me
-            (* let
-                val str = case !i of
-                    TripleNode j => tripleToString j
-                  | Visited(ref(TripleNode me)::rest) => tripleToString me
-                  | ProvenNode (ref(TripleNode(n))) => tripleToString n
-                  | ProvenNode (ref(Visited((ref(ProvenNode(ref(TripleNode(me)))))::rest))) => tripleToString me
-                  | Implication j => conditionToString j
-                  | _ => "AA"
-            in
-                str
-            end *)
-        | _ => "AAAA"
+  val ret = case !n of
+        Implication i => conditionToString i
+      | TripleNode i => tripleToString i
+      | OpenNode i => nodeToString (ref i)
+      | WrongNode i => nodeToString i
+      | ProvenNode i => nodeToString i
+      | Visited(me::rest) => nodeToString me
+      | _ => "AAAA"
 in
     ret
 end
@@ -98,4 +89,3 @@ fun printLeaves (leaves, 0) = (print("\nunproven nodes are: \n\n"); printLeaves(
      printLeaves (rest, y+1)); 
 
 exception Exit;
-fun quit () = raise Exit;

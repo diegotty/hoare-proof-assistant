@@ -8,9 +8,10 @@ datatype condition =  Lt of (exp * exp)
                     | Eq of (exp * exp)
                     | Neq of (exp * exp)
                     | And of (condition * condition) | Or of (condition * condition)
-                    | Implies of (condition * condition) | Not of condition;
+                    | Implies of (condition * condition) | Not of condition
+                    | True | False
 
-datatype imp = Skip | Sec of (imp * imp) | If of (condition * imp * imp) |  While of (condition * imp) | Assign of (string * exp);
+datatype imp = Skip | Sec of (imp * imp) | If of (condition * imp * imp) |  While of (condition * imp) | Assign of (string * exp) | WhileWithInv of (condition * imp * condition);
 
 type triple = (condition * imp * condition)
 

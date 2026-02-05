@@ -65,6 +65,7 @@ fun infer nod =
             val _ = case prog of
                  If i => analyzeIf nod
                | While w => analyzeWhile nod 
+               | WhileWithInv w => analyzeWhile nod 
                | Skip => nod := ProvenNode(ref (TripleNode(opp)))
                | Sec s => analyzeSex nod
                | Assign a => analyzeAssign nod
@@ -153,7 +154,6 @@ SMLofNJ.Internals.TDP.mode := true;
 OS.Process.system "clear";
 use "inferer.sml";
 
-readTripleStr "{ x < 5 } x:=2; while (x < 2) (x:=4) { x < 10 }";
+readTripleStr "{ x < 5 } while (x>1) (while (x>0) (x:=1)); x:=5 { x < 10 }";
  
- *)
-
+*)

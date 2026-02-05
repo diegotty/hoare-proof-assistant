@@ -89,8 +89,7 @@ fun parseCondition (TWord v :: TLess :: TInt i :: rest) = (Lt(X v, K(I i)), rest
   | parseCondition (TWord v1 :: TNeq :: TWord v2 :: rest) = (Neq(X v1, X v2), rest)
   | parseCondition (TWord v1 :: TGre :: TInt i :: rest) = (Gt(X v1, K(I i)), rest)
   | parseCondition (TWord v1 :: TGre :: TWord v2 :: rest) = (Gt(X v1, X v2), rest)
-  | parseCondition _ = raise ParseError "Invalid Condition"
-
+  | parseCondition _ = raise ParseError "Invalid Condition" 
 
 fun analyzeInvariant(a :: b :: c :: TAnd :: rest) = 
       let
@@ -110,8 +109,26 @@ fun analyzeInvariant(a :: b :: c :: TAnd :: rest) =
   | analyzeInvariant [a, b, c] = (parseInvariant [a, b, c], [])
   | analyzeInvariant _ = (raise Fail "Syntax Error: malformed condition or missing ")
 
-(* AND case: an AND between the current condition + the result of the recursion (other conditions) *)
-fun analyzeCondition (a :: b :: c :: TAnd :: rest) = 
+
+
+fun analyzeCondition (TWord "true" :: TAnd :: rest) = 
+      let val (right, final) = analyzeCondition rest in (And(True, right), final) end
+  | analyzeCondition (TWord "true" :: TOr :: rest) = 
+      let val (right, final) = analyzeCondition rest in (Or(True, right), final) end
+
+  (* "false" followed by AND/OR *)
+  | analyzeCondition (TWord "false" :: TAnd :: rest) = 
+      let val (right, final) = analyzeCondition rest in (And(False, right), final) end
+  | analyzeCondition (TWord "false" :: TOr :: rest) = 
+      let val (right, final) = analyzeCondition rest in (Or(False, right), final) end
+
+  (* "true" / "false" as the final condition (followed by } or ) ) *)
+  | analyzeCondition (TWord "true" :: TRBrace :: rest) = (True, TRBrace::rest)
+  | analyzeCondition (TWord "true" :: TRParen :: rest) = (True, TRParen::rest)
+  | analyzeCondition (TWord "false" :: TRBrace :: rest) = (False, TRBrace::rest)
+  | analyzeCondition (TWord "false" :: TRParen :: rest) = (False, TRParen::rest)
+  (* AND case: an AND between the current condition + the result of the recursion (other conditions) *)
+  | analyzeCondition (a :: b :: c :: TAnd :: rest) = 
       let
           val (rightConditions, finalTokens) = analyzeCondition rest
           val (leftCond, _) = parseCondition [a,b,c]
@@ -127,12 +144,19 @@ fun analyzeCondition (a :: b :: c :: TAnd :: rest) =
           (Or(leftCond, rightConditions), finalTokens)
       end
       (* base case (condition + TBrace, we're done with the conditions) *)
-  | analyzeCondition (a :: b :: c :: TBrace :: rest) = 
+  | analyzeCondition (a :: b :: c :: TRBrace :: rest) = 
       let 
       (* rest is in the input, we don't need it from parseCondition *)
         val (finalCondition, _) = parseCondition [a, b, c]
-        val right = TBrace::rest
+        val right = TRBrace::rest
       (* parse the last condition, and return 'rest' (the other stuff) *)
+      in
+        (finalCondition, right)
+      end
+  | analyzeCondition (a :: b :: c :: TRParen :: rest) = 
+      let 
+        val (finalCondition, _) = parseCondition [a, b, c]
+        val right = TRParen::rest
       in
         (finalCondition, right)
       end
@@ -257,7 +281,7 @@ fun parseTriple tokens =
         val (cmd, rest4) = parseImp rest3
         
         val rest5 = expect rest4 TLBrace
-        val (post, rest6) = parseCondition rest5
+        val (post, rest6) = analyzeCondition rest5
         val _ = expect rest6 TRBrace
     in
         (pre, cmd, post)
