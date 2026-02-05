@@ -46,7 +46,6 @@ fun analyzeIf nod =
         val me = ref (TripleNode(prec, prog, post));
         val children = [me, then_triple, else_triple];
     in
-        (* val _ = node := Visited(children) *)
         OS.Process.system "clear";
         nod := Visited(children)
     end

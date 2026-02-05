@@ -129,7 +129,7 @@ fun normaliseFormula (f: f_formula): linear_ineq list list =
         (* a < b -> a <= b-1 -> a-b => -1 *)
         | F_Lt(a, b) => 
             let val (vars, k) = normaliseTerms(a, b) 
-                in [ [ tightenConstraint(vars, k - 1) ]] end
+                in [ [ tightenConstraint(vars, k - 1) ] ] end
 
         (* a >= b -> b <= a *)
         | F_Gte(a, b) => [ [ tightenConstraint(normaliseTerms(b, a)) ] ]
@@ -137,7 +137,7 @@ fun normaliseFormula (f: f_formula): linear_ineq list list =
         (* a > b  -> b < a -> b <= a - 1 *)
         | F_Gt(a, b) => 
             let val (vars, k) = normaliseTerms(b, a)
-                in [[ tightenConstraint(vars, k-1) ]] end
+                in [ [ tightenConstraint(vars, k-1) ] ] end
 
         (* a = b  -> a <= b AND b <= a *)
         | F_Eq(a,b) => [ [ tightenConstraint(normaliseTerms(a, b)), tightenConstraint(normaliseTerms(b, a)) ] ]

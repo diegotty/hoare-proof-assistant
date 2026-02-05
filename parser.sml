@@ -65,8 +65,6 @@ fun expect (tok :: rest) expected =
     if tok = expected then rest else raise ParseError "Unexpected token"
   | expect [] _ = raise ParseError "Unexpected End of Input"
 
-(* Handles: x < 5, x < y *)
-(* Extended to handle logic could go here, keeping it basic for clarity *)
 (* constructs LessThans from given condition
   if condition is word + < + int or word + < + word, it builds the datatype via the correct constructor
 *)
@@ -274,7 +272,6 @@ fun parseTriple tokens =
         
         val rest1 = expect tokens TLBrace
         val (pre, rest2) = analyzeCondition rest1
-        (* val (pre, rest2) = parseCondition rest1 *)
         val rest3 = expect rest2 TRBrace
         
         (* parse code *)
@@ -289,20 +286,3 @@ fun parseTriple tokens =
 
 
 fun readTripleStr str = parseTriple (tokenize str)
-
-(* 
-stack trace smlnj
-CM.make "$smlnj-tdp/back-trace.cm";
-SMLofNJ.Internals.TDP.mode := true;
-
-polyml stack trace
-PolyML.Compiler.debug := true;
-
-
-OS.Process.system "clear";
-use "parser.sml";
-
-readTripleStr "{ x < 5 } skip; while (x < 2) (x := 5; if (x < 3) (x := x + 1) (skip)) { x < 10 }";
-
-readTripleStr "{x >= 0} b := x {b=x & b>=0}"
- *)

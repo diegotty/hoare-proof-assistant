@@ -1,9 +1,3 @@
-(*
-val it =
-  (Lti (("x"f,(NONE,NONE)),5),
-   If (Lti (("x",(NONE,NONE)),3),Assign ("x",Plus (X "x",K (I 1))),Skip),
-   Lti (("x",(NONE,NONE)),10)) : condition * imp * condition
-*)
 val resetColor  = "\027[0m";
 val red    = "\027[31m";
 val green  = "\027[32m";
@@ -77,7 +71,6 @@ let
       | WrongNode i => nodeToString i
       | ProvenNode i => nodeToString i
       | Visited(me::rest) => nodeToString me
-      | _ => "AAAA"
 in
     ret
 end

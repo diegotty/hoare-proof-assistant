@@ -147,13 +147,7 @@ fun readTripleStr str =
       end) handle Exit => ();
 
 (* 
-stack trace smlnj
-CM.make "$smlnj-tdp/back-trace.cm";
-SMLofNJ.Internals.TDP.mode := true;
-
-OS.Process.system "clear";
 use "inferer.sml";
 
 readTripleStr "{ x < 5 } while (x>1) (while (x>0) (x:=1)); x:=5 { x < 10 }";
- 
 *)
