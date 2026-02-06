@@ -188,7 +188,7 @@ fun buildNodes (prog, post) =
 
             val pre = And(Implies(c, pre1), Implies(Not(c), pre2))
 
-            val me = ref(TripleNode(pre, prog, post))
+            val me = ref(OpenNode(TripleNode(pre, prog, post)))
         in
             me
         end

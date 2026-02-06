@@ -167,4 +167,8 @@ x > 0 | x = 0
 
 NON VALIDA con
 x > 0
+
+VALIDA
+readTripleStr "{ true } x := 5; if (x > 0) (y := 1) (y := 2) { y = 1 }";
+
 *)
