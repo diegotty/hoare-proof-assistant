@@ -147,7 +147,24 @@ fun readTripleStr str =
       end) handle Exit => ();
 
 (* 
+
 use "inferer.sml";
 
-readTripleStr "{ x < 5 } while (x>1) (while (x>0) (x:=1)); x:=5 { x < 10 }";
+VALIDA:
+readTripleStr "{ x = 10 } x := x + 1 { x = 11 }";
+
+NON VALIDA:
+readTripleStr "{ x = 5 } x := x + 1 { x = 100 }";
+
+VALIDA:
+readTripleStr "{ true } if (x > 5) (y := 1) (y := 2) { y > 0 }";
+
+WHILE:
+readTripleStr "{ x = 5 } while (x > 0) (x := x - 1) { x = 0 }";
+
+VALIDA con:
+x > 0 | x = 0
+
+NON VALIDA con
+x > 0
 *)
