@@ -1,11 +1,15 @@
-use "datatypes.sml";
+(* implication checker loading *)
+OS.FileSys.chDir "implication-checker";
 use "fme.sml";
+OS.FileSys.chDir "..";
+use "datatypes.sml";
 use "utils.sml";
 use "parser.sml";
 use "analyze.sml";
 use "treeprinter.sml";
 
-val dummy_cond = Lt (X "x", K (I 10));
+(* val dummy_cond = Lt (X "x", K (I 10)); *)
+val dummy_cond = Lt (Var "x", Const 10);
 val dummy_root_val = (dummy_cond, Skip, dummy_cond);
 val root = ref (OpenNode(TripleNode dummy_root_val));
 

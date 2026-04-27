@@ -65,29 +65,32 @@ fun expect (tok :: rest) expected =
     if tok = expected then rest else raise ParseError "Unexpected token"
   | expect [] _ = raise ParseError "Unexpected End of Input"
 
-(* constructs LessThans from given condition
-  if condition is word + < + int or word + < + word, it builds the datatype via the correct constructor
+(* constructs LessThans from given formula
+  if formula is word + < + int or word + < + word, it builds the datatype via the correct constructor
 *)
 
-fun parseInvariant [TWord v, TLess, TInt i] = Lt(X v, K(I i))
-  | parseInvariant [TWord v1, TLess, TWord v2] = Lt(X v1, X v2)
-  | parseInvariant [TWord v1, TEq, TInt i] = Eq(X v1, K(I i))
-  | parseInvariant [TWord v1, TEq, TWord v2] = Eq(X v1, X v2)
-  | parseInvariant [TWord v1, TNeq, TInt i] = Eq(X v1, K (I i))
-  | parseInvariant [TWord v1, TNeq, TWord v2] = Neq(X v1, X v2)
-  | parseInvariant [TWord v1, TGre, TInt i] = Gt(X v1, K(I i))
-  | parseInvariant [TWord v1, TGre, TWord v2] = Gt(X v1, X v2)
+fun parseInvariant [TWord v, TLess, TInt i] = Lt(Var v, Const i)
+  | parseInvariant [TWord v1, TLess, TWord v2] = Lt(Var v1, Var v2)
+  | parseInvariant [TWord v1, TEq, TInt i] = Eq(Var v1, Const i)
+  | parseInvariant [TWord v1, TEq, TWord v2] = Eq(Var v1, Var v2)
+  (*| parseInvariant [TWord v1, TNeq, TWord v2] = Neq(Var v1, Var v2*)
+  | parseInvariant [TWord v1, TNeq, TInt i] = Not(Eq(Var v1, Const i))
+  | parseInvariant [TWord v1, TNeq, TWord v2] = Not(Eq(Var v1, Var v2))
+  | parseInvariant [TWord v1, TGre, TInt i] = Gt(Var v1, Const i)
+  | parseInvariant [TWord v1, TGre, TWord v2] = Gt(Var v1, Var v2)
   | parseInvariant _ = raise ParseError "Invalid Condition"
 
-fun parseCondition (TWord v :: TLess :: TInt i :: rest) = (Lt(X v, K(I i)), rest)
-  | parseCondition (TWord v1 :: TLess :: TWord v2 :: rest) = (Lt(X v1, X v2), rest)
-  | parseCondition (TWord v1 :: TEq :: TInt i :: rest) = (Eq(X v1, K(I i)), rest)
-  | parseCondition (TWord v1 :: TEq :: TWord v2 :: rest) = (Eq(X v1, X v2), rest)
-  | parseCondition (TWord v1 :: TNeq :: TInt i :: rest) = (Neq(X v1, K (I i)), rest)
-  | parseCondition (TWord v1 :: TNeq :: TWord v2 :: rest) = (Neq(X v1, X v2), rest)
-  | parseCondition (TWord v1 :: TGre :: TInt i :: rest) = (Gt(X v1, K(I i)), rest)
-  | parseCondition (TWord v1 :: TGre :: TWord v2 :: rest) = (Gt(X v1, X v2), rest)
-  | parseCondition _ = raise ParseError "Invalid Condition" 
+fun parseCondition (TWord v :: TLess :: TInt i :: rest) = (Lt(Var v, Const i), rest)
+  | parseCondition (TWord v1 :: TLess :: TWord v2 :: rest) = (Lt(Var v1, Var v2), rest)
+  | parseCondition (TWord v1 :: TEq :: TInt i :: rest) = (Eq(Var v1, Const i), rest)
+  | parseCondition (TWord v1 :: TEq :: TWord v2 :: rest) = (Eq(Var v1, Var v2), rest)
+ (*| parseCondition (TWord v1 :: TNeq :: TInt i :: rest) = (Neq(Var v1, Const i, rest)*)
+  | parseCondition (TWord v1 :: TNeq :: TInt i :: rest) = (Not(Eq(Var v1, Const i)), rest)
+  (*| parseCondition (TWord v1 :: TNeq :: TWord v2 :: rest) = (Neq(Var v1, Var v2), rest)*)
+  | parseCondition (TWord v1 :: TNeq :: TWord v2 :: rest) = (Not(Eq(Var v1, Var v2)), rest)
+  | parseCondition (TWord v1 :: TGre :: TInt i :: rest) = (Gt(Var v1, Const i), rest)
+  | parseCondition (TWord v1 :: TGre :: TWord v2 :: rest) = (Gt(Var v1, Var v2), rest)
+  | parseCondition _ = raise ParseError "Invalid Condition"
 
 fun analyzeInvariant(a :: b :: c :: TAnd :: rest) = 
       let
@@ -96,7 +99,7 @@ fun analyzeInvariant(a :: b :: c :: TAnd :: rest) =
       in
           (And(leftCond, rightConditions), finalTokens)
       end
-      (* OR case: an OR between the current condition + the result finalTokensof the recursion *)
+      (* OR case: an OR between the current formula + the result finalTokensof the recursion *)
   | analyzeInvariant (a :: b :: c :: TOr :: rest) = 
       let 
           val (rightConditions, finalTokens) = analyzeInvariant rest
@@ -105,7 +108,7 @@ fun analyzeInvariant(a :: b :: c :: TAnd :: rest) =
           (Or(leftCond, rightConditions), finalTokens)
       end
   | analyzeInvariant [a, b, c] = (parseInvariant [a, b, c], [])
-  | analyzeInvariant _ = (raise Fail "Syntax Error: malformed condition or missing ")
+  | analyzeInvariant _ = (raise Fail "Syntax Error: malformed formula or missing ")
 
 
 
@@ -120,12 +123,12 @@ fun analyzeCondition (TWord "true" :: TAnd :: rest) =
   | analyzeCondition (TWord "false" :: TOr :: rest) = 
       let val (right, final) = analyzeCondition rest in (Or(False, right), final) end
 
-  (* "true" / "false" as the final condition (followed by } or ) ) *)
+  (* "true" / "false" as the final formula (followed by } or ) ) *)
   | analyzeCondition (TWord "true" :: TRBrace :: rest) = (True, TRBrace::rest)
   | analyzeCondition (TWord "true" :: TRParen :: rest) = (True, TRParen::rest)
   | analyzeCondition (TWord "false" :: TRBrace :: rest) = (False, TRBrace::rest)
   | analyzeCondition (TWord "false" :: TRParen :: rest) = (False, TRParen::rest)
-  (* AND case: an AND between the current condition + the result of the recursion (other conditions) *)
+  (* AND case: an AND between the current formula + the result of the recursion (other conditions) *)
   | analyzeCondition (a :: b :: c :: TAnd :: rest) = 
       let
           val (rightConditions, finalTokens) = analyzeCondition rest
@@ -133,7 +136,7 @@ fun analyzeCondition (TWord "true" :: TAnd :: rest) =
       in
           (And(leftCond, rightConditions), finalTokens)
       end
-      (* OR case: an OR between the current condition + the result of the recursion *)
+      (* OR case: an OR between the current formula + the result of the recursion *)
   | analyzeCondition (a :: b :: c :: TOr :: rest) = 
       let 
           val (rightConditions, finalTokens) = analyzeCondition rest
@@ -141,13 +144,13 @@ fun analyzeCondition (TWord "true" :: TAnd :: rest) =
       in
           (Or(leftCond, rightConditions), finalTokens)
       end
-      (* base case (condition + TBrace, we're done with the conditions) *)
+      (* base case (formula + TBrace, we're done with the conditions) *)
   | analyzeCondition (a :: b :: c :: TRBrace :: rest) = 
       let 
       (* rest is in the input, we don't need it from parseCondition *)
         val (finalCondition, _) = parseCondition [a, b, c]
         val right = TRBrace::rest
-      (* parse the last condition, and return 'rest' (the other stuff) *)
+      (* parse the last formula, and return 'rest' (the other stuff) *)
       in
         (finalCondition, right)
       end
@@ -158,47 +161,58 @@ fun analyzeCondition (TWord "true" :: TAnd :: rest) =
       in
         (finalCondition, right)
       end
-  | analyzeCondition _ = raise Fail "Syntax Error: malformed condition or missing }"
+  | analyzeCondition _ = raise Fail "Syntax Error: malformed formula or missing }"
 
-(* returns a correct "exp" exp *)
+(* returns a correct "term" term *)
+(* fun parseExp (TInt x :: TPlus :: rest) = *)
+(*     let *)
+(*       val (expr, rest) = parseExp rest *)
+(*     in  *)
+(*       (Plus(Const x, expr), rest) *)
+(*     end *)
+(*   | parseExp (TInt x :: TMinus :: rest) = *)
+(*     let *)
+(*       val (expr, rest) = parseExp rest *)
+(*     in  *)
+(*       (Minus(Const x, expr), rest) *)
+(*     end *)
+(*   | parseExp (TInt x :: TLess :: rest) =  *)
+(*     let  *)
+(*       val (expr, rest) = parseExp rest *)
+(*     in  *)
+(*       (Less(Const x, expr), rest) *)
+(*     end *)
+(*   | parseExp (TWord x :: TPlus :: rest) = *)
+(*     let  *)
+(*       val (expr, rest) = parseExp rest *)
+(*     in  *)
+(*       (Plus(Var x, expr), rest) *)
+(*     end *)
+(*   | parseExp (TWord x :: TMinus :: rest) = *)
+(*     let  *)
+(*       val (expr, rest) = parseExp rest *)
+(*     in  *)
+(*       (Minus(Var x, expr), rest) *)
+(*     end *)
+(*   (* base cases: *) *)
+(*   | parseExp (TInt x :: rest) = (Const x, rest) *)
+(*   | parseExp (TWord x :: rest) = (Var x, rest) *)
+(*   | parseExp _ = raise Fail "parse error" *)
+(**)
+
 fun parseExp (TInt x :: TPlus :: rest) =
-    let
-      val (expr, rest) = parseExp rest
-    in 
-      (Plus(K(I(x)), expr), rest)
-    end
+    let val (expr, rest) = parseExp rest in (Plus(Const x, expr), rest) end
   | parseExp (TInt x :: TMinus :: rest) =
-    let
-      val (expr, rest) = parseExp rest
-    in 
-      (Minus(K(I(x)), expr), rest)
-    end
-  | parseExp (TInt x :: TLess :: rest) = 
-    let 
-      val (expr, rest) = parseExp rest
-    in 
-      (Less(K(I(x)), expr), rest)
-    end
+    let val (expr, rest) = parseExp rest in (Minus(Const x, expr), rest) end
   | parseExp (TWord x :: TPlus :: rest) =
-    let 
-      val (expr, rest) = parseExp rest
-    in 
-      (Plus(X(x), expr), rest)
-    end
+    let val (expr, rest) = parseExp rest in (Plus(Var x, expr), rest) end
   | parseExp (TWord x :: TMinus :: rest) =
-    let 
-      val (expr, rest) = parseExp rest
-    in 
-      (Minus(X(x), expr), rest)
-    end
-  (* base cases: *)
-  | parseExp (TInt x :: rest) = (K(I(x)), rest)
-  | parseExp (TWord "true" :: rest) = (K(B(false)), rest)
-  | parseExp (TWord "false" :: rest) = (K(B(true)), rest)
-  | parseExp (TWord x :: rest) = (X(x), rest)
+    let val (expr, rest) = parseExp rest in (Minus(Var x, expr), rest) end
+  | parseExp (TInt x :: rest) = (Const x, rest)
+  | parseExp (TWord x :: rest) = (Var x, rest)
   | parseExp _ = raise Fail "parse error"
 
-(* x := expr (int / bool / exp *)
+(* x := expr (int / bool / term *)
 fun parseAssign var vl = 
   let 
     val (value, rest) = parseExp vl;
@@ -213,7 +227,7 @@ fun parseInstruction (TWord "skip" :: rest) = (Skip, rest)
  
 and parseIf tokens = 
   let 
-    (* IF : parenthesis + condition + parenthesis *)
+    (* IF : parenthesis + formula + parenthesis *)
     val body = expect tokens TLParen;
     val (cond, body) = analyzeCondition body;
     val body = expect body TRParen;
@@ -251,7 +265,7 @@ and parseImp tokens =
 (* syntax: (CONDITION)(q) *)
 and parseWhile tokens = 
   let 
-    (* WHILE : parenthesis + condition + parenthesis *)
+    (* WHILE : parenthesis + formula + parenthesis *)
     val body = expect tokens TLParen;
     val (cond, rest) = analyzeCondition body;
     val rest = expect rest TRParen;

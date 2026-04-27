@@ -1,0 +1,3 @@
+[submodule "implication-checker"]
+	path = implication-checker
+	url = https://github.com/AglaiaNorza/sequitur-sml.git

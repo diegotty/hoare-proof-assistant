@@ -1,25 +1,3 @@
-fun transExp (e: exp) : f_term =
-    case e of
-       K (I i) => F_Const i
-     | X s => F_Var s            
-     | Plus(e1, e2) => F_Plus(transExp e1, transExp e2)
-     | Minus(e1, e2) => F_Minus(transExp e1, transExp e2)
-     | _ => raise ParseError "issues with the implication"
-
-fun transImp (c: condition) : f_formula =
-    case c of
-       Lt(e1, e2) => F_Lt(transExp e1, transExp e2)
-     | Gt(e1, e2) => F_Gt(transExp e1, transExp e2)
-     | Eq(e1, e2) => F_Eq(transExp e1, transExp e2)
-     | Neq(e1, e2) => 
-            F_Or(F_Lt(transExp e1, transExp e2), F_Gt(transExp e1, transExp e2))
-     | And(c1, c2) => F_And(transImp c1, transImp c2)
-     | Or(c1, c2) => F_Or(transImp c1, transImp c2)
-     | Implies(c1, c2) => F_Implies(transImp c1, transImp c2)
-     | Not(c1) => F_Not(transImp c1)
-     | True => F_True
-     | False => F_False
-
 fun getInvariant () =
    let
         val _ = print("to properly analyse this 'while', i need an invariant!\ntype it directly (ex. 'x > 2')\n-" ^ purple ^ "invariant: " ^ resetColor);
@@ -79,7 +57,7 @@ fun analyzeImplication nod =
         val _ =  print("\n\nenter to determine its validity:")
         val input = TextIO.inputLine TextIO.stdIn 
 
-        val isTrue = verify (transImp imp)
+        val isTrue = (verify imp = "VALID implication!!")
     in
         (
         getConfirmationFromUser;
@@ -90,20 +68,47 @@ fun analyzeImplication nod =
         )
     end
 
-fun swapExp (cond, targetVar, replacementVar) =
+(* fun swapExp (cond, targetVar, replacementVar) = *)
+(*     case cond of  *)
+(*             Plus (exp1, exp2) =>  *)
+(*                 Plus(swapExp (exp1, targetVar, replacementVar), *)
+(*                 swapExp (exp2, targetVar, replacementVar)) *)
+(*         | Minus (exp1, exp2) => *)
+(*                 Minus(swapExp (exp1, targetVar, replacementVar), *)
+(*                 swapExp (exp2, targetVar, replacementVar)) *)
+(*         | X s =>  *)
+(*             if s = targetVar then *)
+(*                 replacementVar *)
+(*             else *)
+(*                 cond *)
+(*         | _ => cond *)
+
+fun swapExp (cond : term, targetVar : string, replacementVar : term) : term =
     case cond of 
-            Plus (exp1, exp2) => 
-                Plus(swapExp (exp1, targetVar, replacementVar),
-                swapExp (exp1, targetVar, replacementVar))
-        | Minus (exp1, exp2) =>
-                Minus(swapExp (exp1, targetVar, replacementVar),
-                swapExp (exp1, targetVar, replacementVar))
-        | X s => 
-            if s = targetVar then
-                replacementVar
-            else
-                cond
-        | _ => cond
+          Plus (exp1, exp2)  => Plus(swapExp (exp1, targetVar, replacementVar),
+                                     swapExp (exp2, targetVar, replacementVar))
+        | Minus (exp1, exp2) => Minus(swapExp (exp1, targetVar, replacementVar),
+                                      swapExp (exp2, targetVar, replacementVar))
+        | Times (exp1, exp2) => Times(swapExp (exp1, targetVar, replacementVar),
+                                      swapExp (exp2, targetVar, replacementVar))
+        | Var s => if s = targetVar then replacementVar else cond
+        | Const i => cond
+
+
+(* fun substitute(And(cond1, cond2), variable, value) =  *)
+(*         And(substitute (cond1, variable, value), substitute (cond2, variable, value)) *)
+(*   | substitute(Or(cond1, cond2), variable, value) = *)
+(*         Or(substitute (cond1, variable, value), substitute (cond2, variable, value)) *)
+(*   | substitute(Implies(cond1, cond2), variable, value) = *)
+(*             Implies(substitute (cond1, variable, value), substitute (cond2, variable, value)) *)
+(*   | substitute(Not(cond), variable, value) = *)
+(*       Not(substitute (cond, variable, value)) *)
+(*   | substitute(cond, variable, value) = *)
+(*         case cond of  *)
+(*             Lt(exp1, exp2) => Lt(swapExp(exp1, variable, value), swapExp(exp2, variable, value)) *)
+(*             | Gt(exp1, exp2) => Gt(swapExp(exp1, variable, value), swapExp(exp2, variable, value)) *)
+(*             | Eq(exp1, exp2) => Eq(swapExp(exp1, variable, value), swapExp(exp2, variable, value)) *)
+(*             | Neq(exp1, exp2) => Neq(swapExp(exp1, variable, value), swapExp(exp2, variable, value)) *)
 
 
 fun substitute(And(cond1, cond2), variable, value) = 
@@ -111,15 +116,19 @@ fun substitute(And(cond1, cond2), variable, value) =
   | substitute(Or(cond1, cond2), variable, value) =
         Or(substitute (cond1, variable, value), substitute (cond2, variable, value))
   | substitute(Implies(cond1, cond2), variable, value) =
-            Implies(substitute (cond1, variable, value), substitute (cond2, variable, value))
+        Implies(substitute (cond1, variable, value), substitute (cond2, variable, value))
   | substitute(Not(cond), variable, value) =
-      Not(substitute (cond, variable, value))
+        Not(substitute (cond, variable, value))
   | substitute(cond, variable, value) =
         case cond of 
-            Lt(exp1, exp2) => Lt(swapExp(exp1, variable, value), swapExp(exp2, variable, value))
-            | Gt(exp1, exp2) => Gt(swapExp(exp1, variable, value), swapExp(exp2, variable, value))
-            | Eq(exp1, exp2) => Eq(swapExp(exp1, variable, value), swapExp(exp2, variable, value))
-            | Neq(exp1, exp2) => Neq(swapExp(exp1, variable, value), swapExp(exp2, variable, value))
+            Lt(exp1, exp2)  => Lt(swapExp(exp1, variable, value), swapExp(exp2, variable, value))
+          | Lte(exp1, exp2) => Lte(swapExp(exp1, variable, value), swapExp(exp2, variable, value))
+          | Gt(exp1, exp2)  => Gt(swapExp(exp1, variable, value), swapExp(exp2, variable, value))
+          | Gte(exp1, exp2) => Gte(swapExp(exp1, variable, value), swapExp(exp2, variable, value))
+          | Eq(exp1, exp2)  => Eq(swapExp(exp1, variable, value), swapExp(exp2, variable, value))
+          | True  => True
+          | False => False
+
 
 fun analyzeAssign nod = 
     let

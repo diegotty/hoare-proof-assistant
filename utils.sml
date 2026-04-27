@@ -22,24 +22,35 @@ fun getConfirmationFromUser () =
            | SOME text => ()
    end  
 
+(* fun expToString expr =  *)
+(*     case expr of *)
+(*           Plus (add1, add2) => expToString(add1) ^ " + " ^ expToString(add2) *)
+(*         | Minus (sub1, sub2) => expToString(sub1) ^  " - " ^ expToString(sub2) *)
+(*         | Less (v1, v2) => expToString(v1) ^ " < " ^ expToString(v2) *)
+(*         | K(I i) => Int.toString i *)
+(*         | K(B b) => Bool.toString b *)
+(*         | X x => x; *)
+
 fun expToString expr = 
     case expr of
-          Plus (add1, add2) => expToString(add1) ^ " + " ^ expToString(add2)
-        | Minus (sub1, sub2) => expToString(sub1) ^  " - " ^ expToString(sub2)
-        | Less (v1, v2) => expToString(v1) ^ " < " ^ expToString(v2)
-        | K(I i) => Int.toString i
-        | K(B b) => Bool.toString b
-        | X x => x;
+          Plus (add1, add2)  => expToString(add1) ^ " + " ^ expToString(add2)
+        | Minus (sub1, sub2) => expToString(sub1) ^ " - " ^ expToString(sub2)
+        | Times (t1, t2)     => expToString(t1)   ^ " * " ^ expToString(t2)
+        | Const i => Int.toString i
+        | Var x => x             
 
 fun conditionToString cond =
     case cond of 
           Lt (exp1, exp2) => expToString exp1 ^ " < " ^ expToString exp2
+        | Lte (e1, e2) => expToString e1 ^ " <= " ^ expToString e2
         | Gt (exp1, exp2) => expToString exp1 ^ " > " ^ expToString exp2
+        | Gte (e1, e2) => expToString e1 ^ " >= " ^ expToString e2
         | Eq (exp1, exp2) => expToString exp1 ^ " = " ^ expToString exp2
-        | Neq (exp1, exp2) => expToString exp1 ^ " <> " ^ expToString exp2
+        (*| Neq (exp1, exp2) => expToString exp1 ^ " <> " ^ expToString exp2 *)
         | And (c1, c2) => conditionToString(c1) ^ " & " ^ conditionToString(c2)
         | Or (c1, c2) => conditionToString(c1) ^ " | " ^ conditionToString(c2)
         | Implies (c1, c2) => "(" ^ conditionToString(c1) ^ ") => (" ^ conditionToString(c2) ^ ")"
+        | Not (Eq (e1, e2)) => expToString e1 ^ " <> " ^ expToString e2
         | Not c => "!(" ^ conditionToString(c) ^ ")"
         | True => "true"
         | False => "false";
