@@ -3,8 +3,10 @@ datatype token =
     TLBrace | TRBrace       (* { } *)
   | TLParen | TRParen       (* ( ) *)
   | TSemicolon              (* ; *)
-  | TLess | TPlus | TMinus  (* < + - *)
-  | TGre | TEq | TNeq       (* > = <> *)
+  | TLess | TLte            (* < <= *)
+  | TGre | TGte             (* > >= *)
+  | TPlus | TMinus | TTimes (* + - * *)
+  | TEq | TNeq              (* = <> *)
   | TAnd | TOr              (* & | ! *)
   | TAssign                 (* := *)
   | TInt of int             (* 42 *)
@@ -37,13 +39,15 @@ fun tokenize (str: string) : token list =
           | scan (#";" :: cs) = TSemicolon :: scan cs
           | scan (#"+" :: cs) = TPlus :: scan cs
           | scan (#"-" :: cs) = TMinus :: scan cs
+          | scan (#"*" :: cs) = TTimes :: scan cs
+          | scan (#"<" :: #"=" :: cs) = TLte :: scan cs
+          | scan (#">" :: #"=" :: cs) = TGte :: scan cs
           | scan (#"<" :: #">" :: cs) = TNeq :: scan cs
           | scan (#"<" :: cs) = TLess :: scan cs
           | scan (#">" :: cs) = TGre :: scan cs
           | scan (#"=" :: cs) = TEq :: scan cs
           | scan (#"&" :: cs) = TAnd :: scan cs
           | scan (#"|" :: cs) = TOr :: scan cs
-          (* handle := compound token *)
           | scan (#":" :: #"=" :: cs) = TAssign :: scan cs
           | scan (c :: cs) = 
             if Char.isDigit c then
@@ -65,36 +69,45 @@ fun expect (tok :: rest) expected =
     if tok = expected then rest else raise ParseError "Unexpected token"
   | expect [] _ = raise ParseError "Unexpected End of Input"
 
+
 fun parseExp (TInt x :: TPlus :: rest) =
     let val (expr, rest) = parseExp rest in (Plus(Const x, expr), rest) end
   | parseExp (TInt x :: TMinus :: rest) =
     let val (expr, rest) = parseExp rest in (Minus(Const x, expr), rest) end
+  | parseExp (TInt x :: TTimes :: rest) =
+    let val (expr, rest) = parseExp rest in (Times(Const x, expr), rest) end
   | parseExp (TWord x :: TPlus :: rest) =
     let val (expr, rest) = parseExp rest in (Plus(Var x, expr), rest) end
   | parseExp (TWord x :: TMinus :: rest) =
     let val (expr, rest) = parseExp rest in (Minus(Var x, expr), rest) end
+  | parseExp (TWord x :: TTimes :: rest) =
+    let val (expr, rest) = parseExp rest in (Times(Var x, expr), rest) end
   | parseExp (TInt x :: rest) = (Const x, rest)
   | parseExp (TWord x :: rest) = (Var x, rest)
   | parseExp _ = raise Fail "parse error"
-
 
 fun parseCondition (TWord "true" :: rest) = (True, rest)
   | parseCondition (TWord "false" :: rest) = (False, rest)
   | parseCondition tokens =
     let
-        val (leftExp, rest1) = parseExp tokens (* parseExp stops at the relational signs *)
+        val (leftExp, rest1) = parseExp tokens
     in
         case rest1 of
               TEq :: rest2 => 
                 let val (rightExp, finalTokens) = parseExp rest2 in (Eq(leftExp, rightExp), finalTokens) end
             | TLess :: rest2 => 
                 let val (rightExp, finalTokens) = parseExp rest2 in (Lt(leftExp, rightExp), finalTokens) end
+            | TLte :: rest2 => 
+                let val (rightExp, finalTokens) = parseExp rest2 in (Lte(leftExp, rightExp), finalTokens) end
             | TGre :: rest2 => 
                 let val (rightExp, finalTokens) = parseExp rest2 in (Gt(leftExp, rightExp), finalTokens) end
+            | TGte :: rest2 => 
+                let val (rightExp, finalTokens) = parseExp rest2 in (Gte(leftExp, rightExp), finalTokens) end
             | TNeq :: rest2 => 
                 let val (rightExp, finalTokens) = parseExp rest2 in (Not(Eq(leftExp, rightExp)), finalTokens) end
-            | _ => raise ParseError "invalid Condition: missing =, <, >, <>"
+            | _ => raise ParseError "invalid Condition: missing =, <, <=, >, >=, <>"
     end
+
 
 fun analyzeInvariant tokens = 
     let

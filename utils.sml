@@ -61,7 +61,8 @@ fun progToString prog =
         | Sec (p, q) => progToString(p) ^ "; " ^ progToString(q)
         | If (c, p, q) => "if " ^ conditionToString(c) ^ " then (" ^ progToString(p) ^ ") else (" ^ progToString(q) ^ ")"
         | While (cond, p) => "while (" ^ conditionToString(cond) ^ ") do (" ^ progToString(p) ^ ")"
-        | WhileWithInv (cond, p, i) => "while (" ^ conditionToString(cond) ^ ") do (" ^ progToString(p) ^ ")"
+        | WhileWithInv (cond, p, i) => "while (" ^ conditionToString(cond) ^ ") inv {" ^ conditionToString(i) ^ "} do (" ^ progToString(p) ^ ")"
+        (* | WhileWithInv (cond, p, i) => "while (" ^ conditionToString(cond) ^ ") do (" ^ progToString(p) ^ ")" *)
         | Assign (str, expr) => str ^ " := " ^ expToString(expr) ^ "";
 
 fun tripleToString (prec, prog, post) =
