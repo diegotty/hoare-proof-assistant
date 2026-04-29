@@ -15,10 +15,10 @@ A command-line **interactive proof assistant for Hoare Logic**, written in Stand
 The tool supports a standard imperative grammar for expressions (`E`), conditions (`C`), and programs (`p,q`):
 
 ```
-k ::= 0 | 1 | ... | true | false
-E ::= k | x | E + E | E - E | E < E
-C ::= E < E | E > E | E = E | E <> E | C & C | C | C | C => C | !C | true | false
-p, q ::= skip | p;q | if C then p else q | while C do p | x := E
+k ::= 0 | 1 | -1 | 2 | ... 
+E ::= k | x | E + E | E - E | E * E
+C ::= true | false | E < E | E <= E | E > E | E >= E | E = E | C & C | C | C | C => C | !C 
+p, q ::= skip | p;q | if C then p else q | while C do p | while C invariant C do p | x := E
 ```
 
 ---
