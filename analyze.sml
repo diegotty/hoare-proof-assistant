@@ -188,9 +188,9 @@ fun buildNodes (prog, post) =
       | Assign (variable, value) => ref (OpenNode(TripleNode(substitute(post, variable, value), prog, post)))
       | If (c, t, e) =>
         let 
-            val node1 = buildNodes (t,c)
+            val node1 = buildNodes (t,post)
 
-            val node2 = buildNodes (e,c)
+            val node2 = buildNodes (e,post)
             
             val pre1 = getPreconditionConsideringNodeType node1         
             val pre2 = getPreconditionConsideringNodeType node2
@@ -212,11 +212,11 @@ fun buildNodes (prog, post) =
         let
             val node1 = buildNodes(s2, post)
             val pre1 = getPreconditionConsideringNodeType node1
-            val OpenNode(TripleNode(_, sec1, _)) = !node1
+            val OpenNode(TripleNode(_, sec2, _)) = !node1
             
             val node2 = buildNodes(s1, pre1)
             val pre2 = getPreconditionConsideringNodeType node2
-            val OpenNode(TripleNode(_, sec2, _)) = !node2
+            val OpenNode(TripleNode(_, sec1, _)) = !node2
 
             val me = ref(OpenNode(TripleNode(pre2, Sec(sec1, sec2), post)))
         in
