@@ -70,7 +70,9 @@ fun expect (tok :: rest) expected =
   | expect [] _ = raise ParseError "Unexpected End of Input"
 
 
-fun parseExp (TInt x :: TPlus :: rest) =
+fun parseExp (TMinus :: TInt x :: rest) = (Const (~x), rest)
+  | parseExp (TMinus :: TWord x :: rest) = (Minus(Const 0, Var x), rest)
+  | parseExp (TInt x :: TPlus :: rest) =
     let val (expr, rest) = parseExp rest in (Plus(Const x, expr), rest) end
   | parseExp (TInt x :: TMinus :: rest) =
     let val (expr, rest) = parseExp rest in (Minus(Const x, expr), rest) end

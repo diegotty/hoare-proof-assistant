@@ -22,12 +22,25 @@ fun visit (nod, l) =
         in 
             List.concat (map (fn x => visit (x, l+1)) rest)
         end
+    (* | WrongNode i => ( *)
+    (*      printFancyTree root;  *)
+    (*      print "the proof is over! the initial triple was not valid DD:\n\n"; *)
+    (*      (* OS.Process.exit OS.Process.success) *) *)
+    (*      raise Exit *)
+    (*   ) *)
     | WrongNode i => (
-         printFancyTree root; 
-         print "the proof is over! the initial triple was not valid DD:\n\n";
-         (* OS.Process.exit OS.Process.success) *)
-         raise Exit
-      )
+        printFancyTree root; 
+            let
+                val Implication(imp) = !i
+                val imp_str = conditionToString imp
+                val result = verify_with_counterexample imp
+            in
+                print ("\n" ^ resetColor ^ imp_str ^ " is an: \n");
+                print (red ^ result ^ resetColor ^ "\n\n");
+                print "the proof is over! the initial triple was not valid DD:\n\n";
+                raise Exit
+            end
+          )
     | _ => []
 
 fun updateTree (nod) = 
