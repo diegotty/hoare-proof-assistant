@@ -41,3 +41,7 @@ readTripleStr "{ x = 5 } x := x + 1 { x = 6 }";
 * **node selection**: enter the index of the node you wish to prove
     * loop invariants: if prompted, provide loop invariants
 * **resolution**: the tool applies Hoare rules and WP calculus until all leaves are closed or an invalidation is found
+
+----
+
+> this tool was developed collaboratively as the final project for the 'programming languages' course @ sapienza university of rome
