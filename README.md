@@ -21,6 +21,8 @@ C ::= true | false | E < E | E <= E | E > E | E >= E | E = E | C & C | C | C | C
 p, q ::= skip | p;q | if C then p else q | while C do p | while C invariant C do p | x := E
 ```
 
+**current limitation**: the automated implication checker uses FME, which is restricted to linear constraints; while the parser supports multiplication (`E * E`), the prover cannot automatically solve implications involving non-linear terms (e.g., `x * y`).
+
 ---
 
 ### Usage
