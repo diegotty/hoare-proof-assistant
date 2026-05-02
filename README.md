@@ -43,7 +43,7 @@ To avoid a `ParseError`, ensure your control structures follow these patterns:
     *   **format:** `if (condition) (program_p) (program_q)`
     *   **example:** `if (x > 0) (y := 1) (y := 0)`
 
-*   **while loops:** Requires two sets of parentheses—one for the loop condition and one for the loop body
+*   **while loops:** requires two sets of parentheses—one for the loop condition and one for the loop body
     *   **format:** `while (condition) (loop_body)`
     *   **example:** `while (x < 10) (x := x + 1)`
 
@@ -67,13 +67,11 @@ To avoid a `ParseError`, ensure your control structures follow these patterns:
 
 1) **simple program**
 
-demonstrates the weakest precondition derivation for a single assignment
-
 ```SML
 readTripleStr "{ x = 10 } x := x + 1 { x = 11 }";
 ```
 *   **result**: valid
-* the tool automatically calculates the precondition $x + 1 = 11$ and uses the implication checker to prove that $x = 10 \Rightarrow x + 1 = 11$
+* the tool automatically calculates the precondition `x + 1 = 11` and uses the implication checker to prove that `x = 10 -> x + 1 = 11`
 
 ----
 2) **loop invariants (interactive)**
@@ -83,7 +81,7 @@ readTripleStr "{ x = 5 } while (x > 0) (x := x - 1) { x = 0 }";
 ```
 
 *   **correct invariant**: when prompted, enter `x >= 0` (or `x = 0 | x > 0`)
-*   **incorrect invariant**: if you enter `x > 0`, the proof will fail - that's because the loop terminates when $x = 0$, which does not satisfy the invariant $x > 0$, making it impossible to prove the postcondition
+*   **incorrect invariant**: if you enter `x > 0`, the proof will fail - that's because the loop terminates when `x = 0`, which does not satisfy the invariant `x > 0`, making it impossible to prove the postcondition
 
 ---
 
@@ -92,7 +90,7 @@ readTripleStr "{ x = 5 } while (x > 0) (x := x - 1) { x = 0 }";
 if an implication is mathematically impossible, the Fourier-Motzkin Elimination (FME) engine will detect the contradiction and provide a counterexample
 
 ```SML
-readTripleStr "{ x + y = 10 } if (x > 5) (y := 0) (y := 20) { y < 10 }";
+readTripleStr "{ x > y } x := x - y; y := y + x { y > x }";
 ```
 
 *   **result**: invalid
